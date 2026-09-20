@@ -1,0 +1,317 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum WorkspaceRole { OWNER ADMIN EDITOR MEMBER VIEWER }
+enum ProjectStatus { DRAFT ACTIVE ARCHIVED }
+enum AssetType { IMAGE VIDEO AUDIO FONT OTHER }
+enum JobStatus { QUEUED RUNNING COMPLETED FAILED CANCELLED }
+enum SubscriptionStatus { ACTIVE PAST_DUE CANCELED INCOMPLETE }
+
+model User {
+  id String @id @default(cuid())
+  email String @unique
+  name String?
+  imageUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  memberships WorkspaceMember[]
+  projects Project[]
+  notifications Notification[]
+  auditLogs AuditLog[]
+  usageLedger UsageLedger[]
+}
+
+model Workspace {
+  id String @id @default(cuid())
+  name String
+  slug String @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  members WorkspaceMember[]
+  projects Project[]
+  subscription Subscription?
+  billingEvents BillingEvent[]
+  usageLedger UsageLedger[]
+}
+
+model WorkspaceMember {
+  workspaceId String
+  userId String
+  role WorkspaceRole @default(MEMBER)
+  createdAt DateTime @default(now())
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@id([workspaceId, userId])
+  @@index([userId])
+}
+
+model Project {
+  id String @id @default(cuid())
+  workspaceId String
+  ownerId String
+  name String
+  status ProjectStatus @default(DRAFT)
+  durationSeconds Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  owner User @relation(fields: [ownerId], references: [id])
+  settings ProjectSettings?
+  scripts Script[]
+  scenes Scene[]
+  timelines Timeline[]
+  assets Asset[]
+  renderJobs RenderJob[]
+  exports Export[]
+  captions Caption[]
+  thumbnails Thumbnail[]
+  seoMetadata SeoMetadata?
+  aiJobs AIJob[]
+  @@index([workspaceId, status])
+  @@index([ownerId])
+}
+
+model ProjectSettings {
+  id String @id @default(cuid())
+  projectId String @unique
+  language String @default("en")
+  aspectRatio String @default("16:9")
+  style String?
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Script {
+  id String @id @default(cuid())
+  projectId String
+  version Int @default(1)
+  content String
+  createdAt DateTime @default(now())
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scenes Scene[]
+  @@unique([projectId, version])
+  @@index([projectId])
+}
+
+model Scene {
+  id String @id @default(cuid())
+  projectId String
+  scriptId String?
+  position Int
+  title String?
+  narration String?
+  durationSeconds Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  script Script? @relation(fields: [scriptId], references: [id], onDelete: SetNull)
+  clips TimelineClip[]
+  @@unique([projectId, position])
+  @@index([scriptId])
+}
+
+model Timeline {
+  id String @id @default(cuid())
+  projectId String
+  name String @default("Main timeline")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tracks TimelineTrack[]
+  @@index([projectId])
+}
+
+model TimelineTrack {
+  id String @id @default(cuid())
+  timelineId String
+  name String
+  position Int
+  createdAt DateTime @default(now())
+  timeline Timeline @relation(fields: [timelineId], references: [id], onDelete: Cascade)
+  clips TimelineClip[]
+  @@unique([timelineId, position])
+}
+
+model TimelineClip {
+  id String @id @default(cuid())
+  trackId String
+  sceneId String?
+  assetId String?
+  startMs Int
+  endMs Int
+  createdAt DateTime @default(now())
+  track TimelineTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  scene Scene? @relation(fields: [sceneId], references: [id], onDelete: SetNull)
+  asset Asset? @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  @@index([trackId, startMs])
+}
+
+model Asset {
+  id String @id @default(cuid())
+  projectId String
+  type AssetType
+  name String
+  storageKey String
+  mimeType String
+  sizeBytes BigInt?
+  createdAt DateTime @default(now())
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  audio AudioAsset?
+  video VideoAsset?
+  clips TimelineClip[]
+  @@index([projectId, type])
+}
+
+model AudioAsset {
+  id String @id @default(cuid())
+  assetId String @unique
+  durationSeconds Float?
+  sampleRate Int?
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+}
+
+model VideoAsset {
+  id String @id @default(cuid())
+  assetId String @unique
+  durationSeconds Float?
+  width Int?
+  height Int?
+  fps Float?
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+}
+
+model RenderJob {
+  id String @id @default(cuid())
+  projectId String
+  status JobStatus @default(QUEUED)
+  progress Int @default(0)
+  outputKey String?
+  errorMessage String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  exports Export[]
+  @@index([projectId, status])
+}
+
+model Export {
+  id String @id @default(cuid())
+  projectId String
+  renderJobId String?
+  format String
+  storageKey String
+  createdAt DateTime @default(now())
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  renderJob RenderJob? @relation(fields: [renderJobId], references: [id], onDelete: SetNull)
+  @@index([projectId])
+}
+
+model Caption {
+  id String @id @default(cuid())
+  projectId String
+  language String @default("en")
+  content Json
+  createdAt DateTime @default(now())
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  @@unique([projectId, language])
+}
+
+model Thumbnail {
+  id String @id @default(cuid())
+  projectId String
+  title String?
+  storageKey String
+  createdAt DateTime @default(now())
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  @@index([projectId])
+}
+
+model SeoMetadata {
+  id String @id @default(cuid())
+  projectId String @unique
+  title String?
+  description String?
+  tags String[]
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model AIJob {
+  id String @id @default(cuid())
+  projectId String
+  type String
+  status JobStatus @default(QUEUED)
+  provider String?
+  input Json?
+  output Json?
+  errorMessage String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  @@index([projectId, status])
+}
+
+model Notification {
+  id String @id @default(cuid())
+  userId String
+  title String
+  body String
+  readAt DateTime?
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, readAt])
+}
+
+model UsageLedger {
+  id String @id @default(cuid())
+  userId String
+  workspaceId String
+  metric String
+  quantity Int
+  periodStart DateTime
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  @@index([workspaceId, metric, periodStart])
+}
+
+model Subscription {
+  id String @id @default(cuid())
+  workspaceId String @unique
+  providerCustomerId String? @unique
+  providerSubscriptionId String? @unique
+  status SubscriptionStatus
+  plan String
+  currentPeriodEnd DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model BillingEvent {
+  id String @id @default(cuid())
+  workspaceId String
+  providerEventId String @unique
+  type String
+  payload Json
+  createdAt DateTime @default(now())
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  @@index([workspaceId, createdAt])
+}
+
+model AuditLog {
+  id String @id @default(cuid())
+  userId String?
+  action String
+  entityType String
+  entityId String
+  metadata Json?
+  createdAt DateTime @default(now())
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  @@index([entityType, entityId])
+  @@index([userId, createdAt])
+}

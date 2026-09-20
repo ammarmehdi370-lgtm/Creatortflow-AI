@@ -1,0 +1,5 @@
+import Link from 'next/link';
+
+export default function HomePage() {
+  return <main className="min-h-screen px-6 py-10"><nav className="mx-auto flex max-w-6xl items-center justify-between"><strong className="text-xl tracking-tight">CreatorFlow AI</strong><div className="flex gap-3"><Link className="rounded-md px-4 py-2 text-sm" href="/login">Log in</Link><Link className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground" href="/signup">Start creating</Link></div></nav><section className="mx-auto max-w-6xl py-28"><p className="mb-5 text-sm font-semibold uppercase tracking-[0.2em] text-primary">From idea to upload-ready</p><h1 className="max-w-3xl text-5xl font-semibold tracking-tight md:text-7xl">Make videos that move at the speed of your ideas.</h1><p className="mt-6 max-w-xl text-lg text-muted-foreground">Script, storyboard, generate, edit, and prepare your next YouTube video in one focused workspace.</p><Link className="mt-9 inline-flex rounded-md bg-primary px-5 py-3 font-medium text-primary-foreground" href="/dashboard">Open workspace</Link></section></main>;
+}

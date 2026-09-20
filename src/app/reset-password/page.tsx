@@ -1,0 +1,1 @@
+export default function ResetPasswordPage() { return <main className="mx-auto max-w-md p-8"><h1 className="text-3xl font-semibold">Reset password</h1><p className="mt-2 text-muted-foreground">Password reset will be connected here.</p></main>; }

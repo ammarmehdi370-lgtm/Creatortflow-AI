@@ -1,0 +1,1 @@
+export default function SettingsPage() { return <main className="p-8"><h1 className="text-3xl font-semibold">Settings</h1><p className="mt-2 text-muted-foreground">Workspace settings placeholder.</p></main>; }

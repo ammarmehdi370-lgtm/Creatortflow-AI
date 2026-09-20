@@ -1,0 +1,1 @@
+export default function LoginPage() { return <main className="mx-auto max-w-md p-8"><h1 className="text-3xl font-semibold">Log in</h1><p className="mt-2 text-muted-foreground">Authentication will be connected here.</p></main>; }

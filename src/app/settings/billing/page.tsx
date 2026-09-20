@@ -1,0 +1,1 @@
+export default function BillingPage() { return <main className="p-8"><h1 className="text-3xl font-semibold">Billing</h1><p className="mt-2 text-muted-foreground">Billing settings placeholder.</p></main>; }

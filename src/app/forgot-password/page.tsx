@@ -1,0 +1,1 @@
+export default function ForgotPasswordPage() { return <main className="mx-auto max-w-md p-8"><h1 className="text-3xl font-semibold">Forgot password</h1><p className="mt-2 text-muted-foreground">Password recovery will be connected here.</p></main>; }

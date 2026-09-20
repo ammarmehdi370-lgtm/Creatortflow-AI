@@ -1,0 +1,1 @@
+export default function ProjectPage({ params }: { params: { projectId: string } }) { return <main className="p-8"><p className="text-sm text-muted-foreground">Project</p><h1 className="text-3xl font-semibold">{params.projectId}</h1><p className="mt-2 text-muted-foreground">The production workspace will be built here.</p></main>; }
